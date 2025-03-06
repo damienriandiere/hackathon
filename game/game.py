@@ -3,7 +3,7 @@ import pygame_gui
 from .utils.helpers import load_image, draw_text
 from .ui.menu import Menu
 from .ui.button import Button
-from .config.settings import PAUSED, NB_OBSTACLES, SONG_FILE_PATH, GAMEOVER_FILE_PATH, LEADERBOARD_FILE_PATH, FONT_FILE_PATH, PLAYER_SPEED_AT_BEGINNING, BACKGROUND_FILE_PATH, FOREGROUND_FILE_PATH, OBSTACLE_FILE_PATH, LOGOUT_FILE_PATH, BACKGROUND_SPEED, FOREGROUND_SPEED, BLACK, WHITE
+from .config.settings import PAUSED, NB_OBSTACLES, SONG_FILE_PATH, GAMEOVER_FILE_PATH, LEADERBOARD_FILE_PATH, FONT_FILE_PATH, PLAYER_SPEED_AT_BEGINNING, BACKGROUND_FILE_PATH, FOREGROUND_FILE_PATH, OBSTACLE_FILE_PATH, LOGOUT_FILE_PATH, BACKGROUND_SPEED, FOREGROUND_SPEED, WHITE
 from .core.player import Player
 from .core.obstacle import Obstacle
 import json
@@ -41,8 +41,8 @@ class Game:
         self.player = Player(self.HEIGHT)
         self.nb_obstacles = NB_OBSTACLES
         self.min_spacing = 200  # Distance minimale entre les obstacles
-        self.max_spacing = 500  # Distance maximale entre les obstacles
-        self.spacing = self.min_spacing + (self.max_spacing - self.min_spacing) * (self.speed / 50)  # Ajustement progressif
+        self.max_spacing = 700  # Distance maximale entre les obstacles
+        self.spacing = self.min_spacing + (self.max_spacing - self.min_spacing) * (self.speed / 40)  # Ajustement progressif
 
         self.obstacles = [
             Obstacle((self.WIDTH + i * self.spacing), self.HEIGHT, self.speed, self.obstacle_img) for i in range(self.nb_obstacles)
@@ -88,7 +88,7 @@ class Game:
                 if self.player.alive:
                     self.score += 1
                     self.speed = PLAYER_SPEED_AT_BEGINNING + self.score // 100
-                    self.nb_obstacles = max(NB_OBSTACLES + self.score // 100, 10)
+                    self.nb_obstacles = min(NB_OBSTACLES + self.score // 100, 10)
 
                 # Déplacement du décor
                 self.background_x1 -= BACKGROUND_SPEED
@@ -117,7 +117,7 @@ class Game:
                 if len(self.obstacles) == 0:
                     normalized_speed = min(self.speed, 20)  # Empêche des valeurs absurdes
                     self.spacing = self.min_spacing + (self.max_spacing - self.min_spacing) * (normalized_speed / 20)
-                    self.nb_obstacles = max(NB_OBSTACLES + self.score // 100, 10)
+                    self.nb_obstacles = min(NB_OBSTACLES + self.score // 100, 10)
 
                     new_obstacles = [
                         Obstacle(self.WIDTH + i * self.spacing, self.HEIGHT, self.speed, self.obstacle_img)
@@ -142,7 +142,7 @@ class Game:
 
             if PAUSED:
                 self.time_since_last_toggle += 1
-                if self.time_since_last_toggle >= 1000:
+                if self.time_since_last_toggle >= 50:
                     self.time_since_last_toggle = 0
                     self.text_visible = not self.text_visible
 
@@ -150,7 +150,7 @@ class Game:
                     draw_text(self.screen, "Pause - Appuyez sur P pour reprendre", self.font, WHITE, self.WIDTH // 3, self.HEIGHT // 2)
 
             pygame.display.flip()
-            clock.tick(60)
+            clock.tick(120)
 
     def start_music(self):
         pygame.mixer.music.load(SONG_FILE_PATH)
