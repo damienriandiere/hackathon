@@ -4,7 +4,10 @@
 
 ## Description
 
-Fournissez une brève description de votre projet, en expliquant son objectif principal et les problèmes qu'il vise à résoudre.
+Emotion Race est un projet innovant qui combine la technologie des capteurs physiologiques (EDA et ECG) avec un jeu interactif pour adapter dynamiquement la difficulté en fonction de l'état émotionnel du joueur. Les capteurs EDA et ECG mesurent respectivement la conductance de la peau et la fréquence cardiaque, permettant de détecter le stress mental. L'interface du jeu, développée en Python avec la librairie PyGame, présente un personnage qui doit éviter des obstacles sous forme de balles. La vitesse et le nombre de balles augmentent en fonction du stress détecté, rendant le jeu plus difficile.
+
+Objectif principal :
+Créer une expérience de jeu immersive et adaptative où le joueur peut apprendre à gérer son stress pour améliorer ses performances. En adaptant la difficulté du jeu en temps réel en fonction des réactions physiologiques du joueur, Emotion Race vise à sensibiliser les utilisateurs à la gestion du stress et à leur fournir un outil ludique pour s'entraîner à rester calme sous pression.
 
 ## Table des Matières
 
@@ -17,7 +20,7 @@ Fournissez une brève description de votre projet, en expliquant son objectif pr
 
 ## Installation
 
-Décrivez les étapes nécessaires pour installer votre projet. Par exemple :
+Voici les étapes pour installer le projet en local :
 
 ```bash
 git clone https://github.com/damienriandiere/EmotionRace.git
