@@ -1,0 +1,22 @@
+{
+    "game_settings": {
+      "gravity": 9.8,
+      "jump_strength": -70,
+      "player_speed_at_beginning": 15,
+      "background_speed": 1,
+      "foreground_speed": 5,
+      "nb_obstacles": 1
+    },
+    "ui_settings": {
+      "background_file_path": "./game/assets/images/background.png",
+      "foreground_file_path": "./game/assets/images/foreground.png",
+      "logout_file_path": "./game/assets/images/logout.png",
+      "player_file_path": "./game/assets/images/player.png",
+      "obstacle_file_path": "./game/assets/images/obstacle.png",
+      "song_file_path": "./game/assets/sounds/song.mp3",
+      "leaderboard_file_path": "./game/dataset/leaderboard.json",
+      "gameover_file_path": "./game/assets/images/game_over.png",
+      "font_file_path": "./game/assets/fonts/Cybrpnuk2.ttf"
+    }
+  }
+  

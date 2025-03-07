@@ -1,0 +1,8 @@
+[MESSAGES CONTROL]
+disable=
+    too-many-arguments,
+    too-many-positional-arguments,
+    too-few-public-methods,
+    no-member,
+    attribute-defined-outside-init,
+    too-many-instance-attributes
