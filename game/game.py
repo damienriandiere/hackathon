@@ -28,6 +28,8 @@ Dependencies:
 from datetime import datetime
 import json
 import sys
+import time
+import pandas as pd
 import pygame
 import pygame_gui
 from .utils.helpers import load_image, draw_text
@@ -50,7 +52,7 @@ class Game:
         """
         pygame.init()
         pygame.mixer.init()
-        pygame.display.set_caption("Emotion Race")
+        pygame.display.set_caption('Emotion Race')
 
         self.__screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         self.__width, self.__height = self.__screen.get_size()
@@ -91,8 +93,10 @@ class Game:
 
         self.__score = 0
         self.__speed = self.__config['game_settings']['player_speed_at_beginning']
+        self.__saved_speed = self.__speed
         self.__player = Player(self.__height, self.__config['ui_settings']['player_file_path'])
         self.__nb_obstacles = self.__config['game_settings']['nb_obstacles']
+        self.__saved_nb_obstacles = self.__nb_obstacles
         self.__min_spacing = 200
         self.__max_spacing = 700
         self.__spacing = self.__min_spacing + (self.__max_spacing
@@ -103,9 +107,47 @@ class Game:
                      self.__obstacle_img) for i in range(self.__nb_obstacles)
         )
 
-        self.__time_since_last_toggle = 0
-        self.__text_visible = True
+        self.__gravity = self.__config['game_settings']['gravity_min']
+        self.__jump_strength = self.__config['game_settings']['jump_strength_min']
         self.__paused = False
+
+        self.__stress_file_path = self.__config['sensors']['stress_file_path']
+        self.__stress_state = 'CALM'
+
+
+    def __monitor_stress(self) -> None:
+        try:
+            df = pd.read_csv(self.__stress_file_path)
+        
+            if len(df) < 2:
+                print('Waiting at least 2 lines in the file...')
+                return
+
+            last_state = df.iloc[-1]['State']
+            if last_state == 'CALM':
+                self.__speed = self.__saved_speed
+                self.__nb_obstacles = self.__saved_nb_obstacles
+                self.__stress_state = 'CALM'
+            else:
+                if self.__speed == self.__saved_speed:
+                    # Sauvegarder les paramètres avant modification
+                    self.__saved_speed = self.__speed
+
+                if self.__nb_obstacles == self.__saved_nb_obstacles:
+                    # Sauvegarder les paramètres avant modification
+                    self.__saved_nb_obstacles = self.__nb_obstacles
+
+                # Adapter la difficulté
+                if last_state == 'MODERATE':
+                    self.__stress_state = 'MODERATE'
+                    self.__speed = self.__saved_speed * 1.5
+                    self.__nb_obstacles = self.__saved_nb_obstacles + 1
+                elif last_state == 'STRESSED':
+                    self.__stress_state = 'STRESSED'
+                    self.__speed = self.__saved_speed * 2.0
+                    self.__nb_obstacles = self.__saved_nb_obstacles + 2
+        except Exception as e:
+            print(f"Erreur lors de la lecture du fichier : {e}")
 
     def run(self, restart: bool = False) -> None:
         """
@@ -117,15 +159,28 @@ class Game:
         self.start_music()
         if not restart:
             self.show_start_screen()
+        else:
+            self.__initialize_game_variables()
 
         running = True
+        time_counter = 0
         pygame.event.set_allowed([pygame.QUIT,
                                   pygame.KEYDOWN,
                                   pygame.MOUSEBUTTONDOWN,
                                   pygame_gui.UI_BUTTON_PRESSED])
         clock = pygame.time.Clock()
 
+        last_time = time.time()
+
         while running:
+            current_time = time.time()
+            elapsed_time = current_time - last_time
+            last_time = current_time
+            time_counter += elapsed_time
+
+            if time_counter >= 2: #Update every 2 seconds
+                self.__monitor_stress()
+                time_counter = 0
             self.__handle_events()
 
             if not self.__paused:
@@ -158,7 +213,7 @@ class Game:
             event (pygame.event.Event): The event to handle.
         """
         if event.key == pygame.K_SPACE and not self.__paused:
-            self.__player.jump(self.__config['game_settings']['jump_strength'])
+            self.__player.jump(self.__jump_strength)
         elif event.key == pygame.K_ESCAPE:
             self.__quit_game()
         elif event.key == pygame.K_p:
@@ -166,13 +221,17 @@ class Game:
 
     def __update_game(self) -> None:
         """Update game state."""
-        self.__player.update(self.__config['game_settings']['gravity'])
+        self.__player.update(self.__gravity)
         if self.__player.is_alive():
             self.__score += 1
             self.__speed = (self.__config['game_settings']['player_speed_at_beginning']
-                            + self.__score // 100)
+                            + self.__score // 200)
+            self.__gravity = min(self.__gravity
+                              + 0.001, self.__config['game_settings']['gravity_max'])
+            self.__jump_strength = max(self.__config['game_settings']['jump_strength_min']
+                                    - self.__score // 200, self.__config['game_settings']['jump_strength_max'])
             self.__nb_obstacles = min(self.__config['game_settings']['nb_obstacles']
-                                      + self.__score // 100, 10)
+                                      + self.__score // 200, 10)
 
         self.__update_background()
         self.__update_obstacles()
@@ -210,12 +269,19 @@ class Game:
                                                - self.__min_spacing) * (normalized_speed / 20)
         self.__nb_obstacles = min(self.__config['game_settings']['nb_obstacles']
                                   + self.__score // 100, 10)
-
-        self.__obstacles = [
-            Obstacle(self.__width + i * self.__spacing,
-                     self.__height, self.__speed, self.__obstacle_img)
-            for i in range(self.__nb_obstacles)
-        ]
+        
+        if not self.__obstacles:
+            self.__obstacles = [
+                Obstacle(self.__width + i * self.__spacing,
+                         self.__height, self.__speed, self.__obstacle_img)
+                for i in range(self.__nb_obstacles)
+            ]
+        else:
+            self.__obstacles.add(
+                Obstacle(self.__width + i * self.__spacing,
+                        self.__height, self.__speed, self.__obstacle_img)
+                for i in range(self.__nb_obstacles)
+            )
 
     def __draw_elements(self) -> None:
         """Draw all game elements on the screen."""
@@ -229,6 +295,14 @@ class Game:
         if self.__paused:
             self.__draw_pause_screen()
 
+        if self.__stress_state != 'CALM':
+            if self.__stress_state == 'MODERATE':
+                self.__draw_blurred_background(width=200, factor=20)
+            elif self.__stress_state == 'STRESSED':
+                self.__draw_blurred_background(width=400, factor=50)
+
+        self.__screen.blit(self.__logout_img, self.__logout_rect.topleft)
+
     def __draw_background(self) -> None:
         """Draw the background and foreground images."""
         self.__screen.blit(self.__background_img,
@@ -239,11 +313,18 @@ class Game:
                            (self.__foreground_x1, self.__height - 110))
         self.__screen.blit(self.__foreground_img,
                            (self.__foreground_x2, self.__height - 110))
-        self.__screen.blit(self.__logout_img, self.__logout_rect.topleft)
+
+    def __draw_blurred_background(self, width, factor) -> None:
+        """Draw a blurred background when the player is stressed."""
+        blur_area = pygame.Rect(0, 0, width, self.__height)
+        sub_surface = self.__screen.subsurface(blur_area).copy()
+        small_surface = pygame.transform.smoothscale(sub_surface, (sub_surface.get_width() // factor, sub_surface.get_height() // factor))
+        blurred_sub_surface = pygame.transform.smoothscale(small_surface, (sub_surface.get_width(), sub_surface.get_height()))
+        self.__screen.blit(blurred_sub_surface, blur_area.topleft)
 
     def __draw_game_info(self) -> None:
         """Draw game information such as score and speed."""
-        info_text = f"Score : {self.__score} | Vitesse : {self.__speed}"
+        info_text = f"Score : {self.__score} | Vitesse : {self.__speed} | Gravité : {int(self.__gravity)} | Force de saut : {abs(self.__jump_strength)} | Stress : {self.__stress_state}"
         draw_text(self.__screen, info_text, self.__font, (255, 255, 255), 60, 10)
 
 
