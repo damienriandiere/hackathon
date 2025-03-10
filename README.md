@@ -43,7 +43,7 @@ Une fois le projet installé et les capteurs positionnés, suivez ces étapes po
 
 1. **Lancez la collecte des données physiologiques** :  
    ```bash
-   python sensors/collectDataFromSensors.py
+   python sensors/stress_detection.py
    ```
 
 2. ⏳ **Attendre que la calibration se fasse** : 
