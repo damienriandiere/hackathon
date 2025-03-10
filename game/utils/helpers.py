@@ -1,3 +1,28 @@
+"""
+utils.py
+
+This module provides utility functions for the Emotion Race game, including:
+
+- `draw_text`: Draws text on the screen with an outline.
+- `load_image`: Loads and resizes images.
+- `play_music`: Plays background music in a loop.
+
+Dependencies:
+    - pygame: Used for rendering text, loading images, and handling audio.
+
+Usage Example:
+    screen = pygame.display.set_mode((800, 600))
+    font = pygame.font.Font(None, 36)
+    draw_text(screen, "Hello, World!", font, (255, 255, 255), 100, 100)
+
+    image = load_image("assets/images/player.png", 50, 50)
+    if image:
+        screen.blit(image, (200, 200))
+
+    play_music("assets/sounds/sound.mp3")
+
+Author: [Damien RIANDIERE]
+"""
 import pygame
 
 def draw_text(screen: pygame.Surface, text: str, font: pygame.font.Font,
@@ -18,7 +43,7 @@ def draw_text(screen: pygame.Surface, text: str, font: pygame.font.Font,
     outline_surface = font.render(text, True, (0, 0, 0))  # Black outline
 
     offsets = [(-outline_width, 0), (outline_width, 0), (0, -outline_width), (0, outline_width)]
-    
+
     # Draw only in 4 directions (left, right, top, bottom) for efficiency
     for dx, dy in offsets:
         screen.blit(outline_surface, (x + dx, y + dy))

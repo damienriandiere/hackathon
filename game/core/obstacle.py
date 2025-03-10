@@ -50,7 +50,8 @@ class Obstacle(pygame.sprite.Sprite):
         y_position = random.choice([self.__height - 150, self.__height - 250])
         self.__rect = self.__obstacle_img.get_rect(topleft=(x, y_position))
 
-        self.__hitbox = self.__rect.inflate(-10, -10) # Smaller hitbox for better collision detection
+        # Smaller hitbox for better collision detection
+        self.__hitbox = self.__rect.inflate(-10, -10)
 
     def update(self) -> None:
         """

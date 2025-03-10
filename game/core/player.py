@@ -40,9 +40,11 @@ class Player:
             player_file_path (str): The path to the player's image file.
         """
         self.__height = height
-        self.__image = pygame.transform.scale(pygame.image.load(player_file_path).convert_alpha(), (70, 100))
+        self.__image = pygame.transform.scale(pygame.image.load(player_file_path).convert_alpha(),
+                                              (70, 100))
         self.__rect = self.__image.get_rect(topleft=(20, 20))
-        self.__hitbox = self.__rect.inflate(-10, -10) # Smaller hitbox for better collision detection
+        # Smaller hitbox for better collision detection
+        self.__hitbox = self.__rect.inflate(-10, -10)
         self.__vel_y = 0
         self.__on_ground = False
         self.__alive = True
