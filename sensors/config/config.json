@@ -1,0 +1,18 @@
+{
+    "CALM_THRESHOLD": 15.0,
+    "MODERATE_THRESHOLD": 35.0,
+    "STRESS_THRESHOLD": 65.0,
+    "EDA_WEIGHT": 0.3,
+    "HR_WEIGHT": 0.25,
+    "SDNN_WEIGHT": 0.15,
+    "RMSSD_WEIGHT": 0.15,
+    "PNN50_WEIGHT": 0.15,
+    "MAC_ADDRESS": "98:D3:11:FE:03:67",
+    "SAMPLING_RATE": 1000,
+    "NUM_FRAMES": 10,
+    "PATHS": {
+        "LOG_FILE": "./dataset/stress_log.txt",
+        "VIDEO_FILE": "./dataset/stress_detection_output.mp4",
+        "GRAPH_FILE": "./dataset/stress_graph.png"
+    }
+}

@@ -53,6 +53,7 @@ Une fois le projet installé et les capteurs positionnés, suivez ces étapes po
    ```bash
    python -m game.main.py
    ```
+Des fichiers de configuration sont disponibles **(/config/config.json)** dans les repertoires dédiés respectivement au jeu (*game*) et à la collecte et le traitement des données (*sensors*).
 
 ## Fonctionnalités  
 

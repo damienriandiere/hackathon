@@ -33,6 +33,7 @@ from collections import deque
 import datetime
 import sys
 import time
+import json
 
 import bitalino
 import numpy as np
@@ -40,6 +41,7 @@ import pygame
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 import portalocker
+import imageio
 
 class StressDetectionSystem:
     """
@@ -59,42 +61,70 @@ class StressDetectionSystem:
 
     def load_config(self) -> None:
         """
-        Load configuration parameters from a file.
+        Load configuration parameters from a JSON file.
         """
-        self.args = self.read_args_from_file('./sensors/args.txt')
+        try:
+            with open('./sensors/config/config.json', 'r', encoding='utf-8') as file:
+                self.config = json.load(file)
+            
+            # Load thresholds
+            self.calm_threshold = self.config['CALM_THRESHOLD']
+            self.moderate_threshold = self.config['MODERATE_THRESHOLD']
+            self.stress_threshold = self.config['STRESS_THRESHOLD']
+            
+            # Load weights
+            self.eda_weight = self.config['EDA_WEIGHT']
+            self.hr_weight = self.config['HR_WEIGHT']
+            self.sdnn_weight = self.config['SDNN_WEIGHT']
+            self.rmssd_weight = self.config['RMSSD_WEIGHT']
+            self.pnn50_weight = self.config['PNN50_WEIGHT']
+            
+            # Load sensor parameters
+            self.mac_address = self.config['MAC_ADDRESS']
+            self.sampling_rate = self.config['SAMPLING_RATE']
+            self.num_frames = self.config['NUM_FRAMES']
+            
+            # Load file paths
+            self.log_filename = self.config['PATHS']['LOG_FILE']
+            self.video_filename = self.config['PATHS']['VIDEO_FILE']
+            self.graph_filename = self.config['PATHS']['GRAPH_FILE']
+            
+        except FileNotFoundError:
+            print("Config file not found. Using default values.")
+            self.set_default_config()
+        except json.JSONDecodeError:
+            print("Error decoding JSON. Using default values.")
+            self.set_default_config()
+        except KeyError as e:
+            print(f"Missing key in config file: {e}. Using default values.")
+            self.set_default_config()
 
-        self.calm_threshold = self.args['CALM_THRESHOLD']
-        self.moderate_threshold = self.args['MODERATE_THRESHOLD']
-        self.stress_threshold = self.args['STRESS_THRESHOLD']
-
-        self.eda_weight = self.args['EDA_WEIGHT']
-        self.hr_weight = self.args['HR_WEIGHT']
-        self.sdnn_weight = self.args['SDNN_WEIGHT']
-        self.rmssd_weight = self.args['RMSSD_WEIGHT']
-        self.pnn50_weight = self.args['PNN50_WEIGHT']
-
+    def set_default_config(self) -> None:
+        """
+        Set default configuration values if loading from file fails.
+        """
+        self.calm_threshold = 15.0
+        self.moderate_threshold = 35.0
+        self.stress_threshold = 65.0
+        
+        self.eda_weight = 0.3
+        self.hr_weight = 0.25
+        self.sdnn_weight = 0.15
+        self.rmssd_weight = 0.15
+        self.pnn50_weight = 0.15
+        
         self.mac_address = "98:D3:11:FE:03:67"
         self.sampling_rate = 1000
         self.num_frames = 10
-
-    def read_args_from_file(self,  filename : str) -> dict:
-        """
-        Read configuration arguments from a file.
-        """
-        args = {}
-        with open(filename, 'r', encoding='utf-8') as file:
-            for line in file:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    key, value = line.split('=')
-                    args[key] = float(value)
-        return args
+        
+        self.log_filename = "./dataset/stress_log.txt"
+        self.video_filename = "./dataset/stress_detection_output.mp4"
+        self.graph_filename = "./dataset/stress_graph.png"
 
     def setup_logging(self) -> None:
         """
         Set up logging to record stress levels.
         """
-        self.log_filename = "./dataset/stress_log.txt"
         with open(self.log_filename, "w", encoding='utf-8') as file:
             portalocker.lock(file, portalocker.LOCK_EX)
             file.write("Timestamp,State\n")
@@ -110,7 +140,7 @@ class StressDetectionSystem:
             print("BITalino sensor connected")
             self.device.start(self.sampling_rate, [0, 1])
             print("START")
-        except bitalino.BITalinoException as e:
+        except Exception as e:
             print(f"BITalino-specific error: {e}")
             sys.exit()
         except TimeoutError as e:
@@ -122,6 +152,30 @@ class StressDetectionSystem:
         except ValueError as e:
             print(f"Invalid parameter value: {e}")
             sys.exit()
+
+    def setup_video_recording(self) -> None:
+        """
+        Set up video recording using OpenCV.
+        """
+        self.video_filename = self.config['PATHS']['VIDEO_FILE']
+        self.video_writer = imageio.get_writer(self.video_filename, fps=30)
+    
+    def record_frame(self) -> None:
+        """
+        Capture the current Pygame screen and write it to the video file.
+        """
+        if self.video_writer is None:
+            return
+
+        try:
+            # Get the current Pygame surface as a numpy array
+            frame = pygame.surfarray.array3d(self.screen)
+            # Convert from (width, height, 3) to (height, width, 3)
+            frame = np.transpose(frame, (1, 0, 2))
+            # Write the frame to the video file
+            self.video_writer.append_data(frame)
+        except Exception as e:
+            print(f"Error recording frame: {e}")
 
     def initialize_variables(self) -> None:
         """
@@ -157,13 +211,13 @@ class StressDetectionSystem:
         """
         pygame.init()
         screen_info = pygame.display.Info()
-        self.window_size = (int(screen_info.current_w * 0.9),
-                            int(screen_info.current_h * 0.9))
+        self.window_size = (int(screen_info.current_w * 0.9) // 16 * 16,
+                            int(screen_info.current_h * 0.9) // 16 * 16)
         self.screen = pygame.display.set_mode(self.window_size)
         pygame.display.set_caption("Stress Detection System - Futuristic Interface")
 
         self.font = pygame.font.SysFont("Arial", 30)
-        self.hud_font = pygame.font.SysFont("Press Start 2P", 25)
+        self.hud_font = pygame.font.SysFont("Arial", 25)
         self.status_font = pygame.font.SysFont("Arial", 40)
 
         self.background_color = (20, 20, 20)
@@ -381,10 +435,13 @@ class StressDetectionSystem:
         else:
             state = "STRESSED"
 
-        portalocker.lock(self.log_file, portalocker.LOCK_EX)
-        self.log_file.write(f"{timestamp_now},{state}\n")
-        self.log_file.flush()
-        portalocker.unlock(self.log_file)
+        try:
+            with open(self.log_filename, "a", encoding='utf-8') as file:
+                portalocker.lock(file, portalocker.LOCK_EX)
+                file.write(f"{timestamp_now},{state}\n")
+                portalocker.unlock(file)
+        except Exception as e:
+            print(f"Error writing to log file: {e}")
 
     def calibrate(self) -> None:
         """
@@ -477,34 +534,44 @@ class StressDetectionSystem:
         Generate summary graph after recording.
         """
         if len(self.stress_history) > 0:
-            plt.figure(figsize=(10, 6))
-            plt.plot(list(self.time_history), list(self.stress_history), 'b-', linewidth=2)
-            plt.title('Stress Level Evolution Over Time')
-            plt.xlabel('Time (seconds)')
-            plt.ylabel('Stress Level (%)')
-            plt.grid(True)
-            plt.ylim(0, 100)
+                plt.figure(figsize=(10, 6))
+                plt.plot(list(self.time_history), list(self.stress_history), 'b-', linewidth=2)
+                plt.title('Stress Level Evolution Over Time')
+                plt.xlabel('Time (seconds)')
+                plt.ylabel('Stress Level (%)')
+                plt.grid(True)
+                plt.ylim(0, 100)
 
-            graph_filename = "./dataset/stress_graph.png"
-            plt.savefig(graph_filename)
-            print(f"Graph saved in file '{graph_filename}'")
-
+                plt.savefig(self.graph_filename)
+                print(f"Graph saved in file '{self.graph_filename}'")
+            
     def cleanup(self) -> None:
         """
         Clean up resources.
         """
         print("STOP")
-        self.device.trigger([0, 0])
-        self.device.stop()
-        self.device.close()
-        self.log_file.close()
-        print(f"Data recorded in file '{self.log_filename}'")
+        try:
+            self.device.trigger([0, 0])
+            self.device.stop()
+            self.device.close()
+            print(f"Data recorded in file '{self.log_filename}'")
+        except Exception as e:
+            print(f"Error cleaning up device: {e}")
+            
+        if hasattr(self, 'video_writer') and self.video_writer is not None:
+            try:
+                self.video_writer.close()  # Release the video writer
+                print(f"Video saved in file '{self.video_filename}'")
+            except Exception as e:
+                print(f"Error releasing video writer: {e}")
+        
         pygame.quit()
 
     def run(self) -> None:
         """
         Main application loop.
         """
+        self.setup_video_recording()  # Initialize video recording
         running = True
         while running:
             current_time = time.time()
@@ -521,7 +588,7 @@ class StressDetectionSystem:
 
             if current_time - self.last_reconnect_time >= 60:
                 print("Automatic reconnection attempt...")
-                self.device.stop()
+                #self.device.stop()
                 self.device.close()
                 self.connect_sensor()
                 self.last_reconnect_time = current_time
@@ -541,6 +608,7 @@ class StressDetectionSystem:
                 self.draw_stress_curve()
 
             pygame.display.flip()
+            self.record_frame()  # Record the current frame
             pygame.time.delay(10)
 
         self.cleanup()
