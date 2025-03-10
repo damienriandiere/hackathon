@@ -24,7 +24,7 @@ En adaptant la difficulté du jeu en temps réel en fonction des réactions phys
 - [Licence](#licence)
 - [Auteurs](#auteurs)
 
-## 🚀 Installation
+## Installation
 
 1. **Installer le projet en local** :
 
@@ -38,7 +38,7 @@ pip install -r requirements.txt
    - 📍 **Capteur EDA** : [Positionnement capteurs EDA](Positionnement_EDA.png)
    - 📍 **Capteur ECG** : [Positionnement capteurs ECG](Positionnement_ECG.png)
 
-## 🎮 Utilisation
+## Utilisation
 Une fois le projet installé et les capteurs positionnés, suivez ces étapes pour l'utilissation : 
 
 1. **Lancez la collecte des données physiologiques** :  
@@ -54,7 +54,7 @@ Une fois le projet installé et les capteurs positionnés, suivez ces étapes po
    python -m game.main.py
    ```
 
-## 🔥 Fonctionnalités  
+## Fonctionnalités  
 
 ### 🎮 Mécaniques de jeu  
 ✔️ Contrôle d'un ninja qui doit éviter des balles.  
@@ -74,7 +74,7 @@ Une fois le projet installé et les capteurs positionnés, suivez ces étapes po
 ✔️ Possibilité d’ajuster certains paramètres du jeu (*sensibilité au stress, effet de flou*).  
 ✔️ Possibilité de jouer sans les capteurs.  
 
-## 🤝 Contribuer
+## Contribuer
 
 Les contributions sont les bienvenues ! Veuillez suivre les étapes suivantes pour contribuer :
 
@@ -93,11 +93,11 @@ Les contributions sont les bienvenues ! Veuillez suivre les étapes suivantes po
     ```
 5. **Ouvrez** une Pull Request.
 
-## 📜 Licence
+## Licence
 
 Ce projet est sous licence **Apache 2.0**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
-## 👥 Auteurs
+## Auteurs
 Ce projet a été réalisé par :  
 
 - **[Tomm JOBIT](https://github.com/tjobit)**
